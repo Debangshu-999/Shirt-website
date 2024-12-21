@@ -17,12 +17,102 @@ import {
 } from "../components/index";
 
 const Customizer = () => {
-  const snap = useSnapshot(state);
+    const snap = useSnapshot(state);
+
+    const [file, setFile] = useState("");
+
+    const [prompt, setPrompt] = useState("");
+    const [generatingImg, setGeneratingImg] = useState(false);
+
+    const [activeEditorTab, setActiveEditorTab] = useState("");
+    const [activeFilterTab, setActiveFilterTab] = useState({
+      logoShirt: true,
+      stylishShirt: false,
+    });
+
+    // show tab content depending on the activeTab
+    const generateTabContent = () => {
+      switch (activeEditorTab) {
+        case "colorpicker":
+          return <ColorPicker />;
+        case "filepicker":
+          return (
+            <FilePicker file={file} setFile={setFile} readFile={readFile} />
+          );
+        case "aipicker":
+          return (
+            <AiPicker
+              prompt={prompt}
+              setPrompt={setPrompt}
+              generatingImg={generatingImg}
+              handleSubmit={handleSubmit}
+            />
+          );
+        default:
+          return null;
+      }
+    };
+
+    const handleSubmit = async(type) => {
+      if(!prompt) return alert("Please enter a prompt");
+      try{
+        
+      }catch(error){
+        alert("An error occurred. Please try again");
+      }finally{
+        setGeneratingImg(false);
+        setActiveEditorTab("")
+      }
+    }
+
+    const handleDecals = (type, result) => {
+      const decalType = DecalTypes[type];
+
+      state[decalType.stateProperty] = result;
+
+      if (!activeFilterTab[decalType.filterTab]) {
+        handleActiveFilterTab(decalType.filterTab);
+      }
+    };
+
+    const handleActiveFilterTab = (tabName) => {
+      switch (tabName) {
+        case "logoShirt":
+          state.isLogoTexture = !activeFilterTab[tabName];
+          break;
+        case "stylishShirt":
+          state.isFullTexture = !activeFilterTab[tabName];
+          break;
+        default:
+          state.isLogoTexture = true;
+          state.isFullTexture = false;
+          break;
+      }
+
+      // after setting the state, activeFilterTab is updated
+
+      setActiveFilterTab((prevState) => {
+        return {
+          ...prevState,
+          [tabName]: !prevState[tabName],
+        };
+      });
+    };
+
+    const readFile = (type) => {
+      reader(file).then((result) => {
+        handleDecals(type, result);
+        setActiveEditorTab("");
+      });
+    };
+
+
   return (
     <AnimatePresence>
       {!snap.intro && (
         <>
           <motion.div
+            key="custom"
             className="absolute top-0 left-0 z-10"
             {...slideAnimation("left")}
           >
@@ -31,14 +121,16 @@ const Customizer = () => {
                 {EditorTabs.map((tab) => (
                   <Tab
                     key={tab.name}
-                    title={tab}
-                    active={snap.editorTab === tab}
-                    handleClick={() => {}}
+                    data={tab}
+                    handleClick={() => setActiveEditorTab(tab.name)}
                   />
                 ))}
+
+                {generateTabContent()}
               </div>
             </div>
           </motion.div>
+
           <motion.div
             className="absolute z-10 top-5 right m-5"
             {...fadeAnimation}
@@ -58,7 +150,7 @@ const Customizer = () => {
             {FilterTabs.map((tab) => (
               <Tab
                 key={tab.name}
-                tab={tab}
+                data={tab}
                 isFilterTab
                 isActiveTab=""
                 handleClick={() => handleActiveFilterTab(tab.name)}
